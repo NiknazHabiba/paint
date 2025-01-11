@@ -66,11 +66,12 @@ class PaintApp:
         shape_menu = ttk.Menubutton(toolbar, text="Shapes")
         shape_menu.menu = tk.Menu(shape_menu, tearoff=0)
         shape_menu["menu"] = shape_menu.menu
-        for shape in ["rectangle", "oval", "line"]:
+        for shape in ["rectangle", "oval", "line", "triangle", "diamond"]:
             shape_menu.menu.add_radiobutton(
-                label=shape.capitalize(),
-                command=lambda s=shape: self.select_tool("shape", s)
-            )
+            label=shape.replace("_", " ").capitalize(),
+            command=lambda s=shape: self.select_tool("shape", s)
+        )
+
         shape_menu.pack(side=tk.LEFT, padx=5)
 
         # Fill button
@@ -128,37 +129,59 @@ class PaintApp:
             self.flood_fill(event.x, event.y)
 
     def draw_tool(self, event):
+        # pencile managment
         if self.current_tool == "pencil":
             if self.current_pencil_style == "solid":
                 self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                         fill=self.color, width=self.pen_width, capstyle=tk.ROUND, smooth=tk.TRUE)
                 self.draw.line((self.start_x, self.start_y, event.x, event.y), fill=self.color, width=self.pen_width)
             elif self.current_pencil_style == "dotted":
+                step = self.pen_width * 2
                 x1, y1 = self.start_x, self.start_y
                 x2, y2 = event.x, event.y
-                self.canvas.create_oval(x1, y1, x1 + self.pen_width, y1 + self.pen_width, fill=self.color)
-                self.draw.ellipse((x1, y1, x1 + self.pen_width, y1 + self.pen_width), fill=self.color)
+                dx, dy = x2 - x1, y2 - y1
+                distance = (dx**2 + dy**2)**0.5
+                steps = int(distance // step)
+                for i in range(steps + 1):
+                    dot_x = x1 + (i / steps) * dx
+                    dot_y = y1 + (i / steps) * dy
+                    self.canvas.create_oval(dot_x, dot_y, dot_x + self.pen_width, dot_y + self.pen_width, fill=self.color)
             elif self.current_pencil_style == "wavy":
                 self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                         fill=self.color, width=self.pen_width, dash=(4, 2))
-                self.draw.line((self.start_x, self.start_y, event.x, event.y), fill=self.color, width=self.pen_width)
             self.start_x, self.start_y = event.x, event.y
+
+        # eraser
         elif self.current_tool == "eraser":
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                     fill=self.bg_color, width=self.eraser_width, capstyle=tk.ROUND, smooth=tk.TRUE)
             self.start_x, self.start_y = event.x, event.y
+
+        # shape
         elif self.current_tool == "shape" and self.current_shape:
             if self.current_item:
                 self.canvas.delete(self.current_item)
             if self.current_shape == "rectangle":
                 self.current_item = self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y,
-                                                                 outline=self.color, width=self.pen_width)
+                                                                outline=self.color, width=self.pen_width)
             elif self.current_shape == "oval":
                 self.current_item = self.canvas.create_oval(self.start_x, self.start_y, event.x, event.y,
                                                             outline=self.color, width=self.pen_width)
             elif self.current_shape == "line":
                 self.current_item = self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                                             fill=self.color, width=self.pen_width)
+            elif self.current_shape == "triangle":
+                mid_x = (self.start_x + event.x) // 2
+                self.current_item = self.canvas.create_polygon(self.start_x, event.y, event.x, event.y, mid_x, self.start_y,
+                                                            outline=self.color, width=self.pen_width, fill="")
+            elif self.current_shape == "diamond":
+                mid_x = (self.start_x + event.x) // 2
+                mid_y = (self.start_y + event.y) // 2
+                self.current_item = self.canvas.create_polygon(mid_x, self.start_y,
+                                                            event.x, mid_y,
+                                                            mid_x, event.y,
+                                                            self.start_x, mid_y,
+                                                            outline=self.color, width=self.pen_width, fill="")
 
     def reset_draw(self, event):
         if self.current_tool == "shape" and self.current_shape and self.current_item:
