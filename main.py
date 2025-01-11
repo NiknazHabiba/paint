@@ -6,9 +6,18 @@ from PIL import Image, ImageDraw, ImageTk, ImageColor
 
 class PaintApp:
     def __init__(self, root):
+
         self.root = root
         self.root.title("Python Paint App")
         self.root.geometry("1024x768")
+        self.root.attributes("-fullscreen", True)  #set fullscreen mode ad defualt
+        self.root.bind("<Escape>", lambda e: self.exit_fullscreen())
+
+        #get with and height of screen
+        self.screen_width = self.root.winfo_screenwidth()
+        self.screen_height = self.root.winfo_screenheight()
+
+    
 
         # Default settings
         self.current_tool = "pencil"
@@ -21,6 +30,9 @@ class PaintApp:
 
         # Image for canvas
         self.image = Image.new("RGB", (1024, 768), self.bg_color)
+        self.draw = ImageDraw.Draw(self.image)
+
+        self.image = Image.new("RGB", (self.screen_width, self.screen_height), self.bg_color)
         self.draw = ImageDraw.Draw(self.image)
 
         # Initialize UI
@@ -195,6 +207,9 @@ class PaintApp:
             opened_image = Image.open(file_path)
             self.image.paste(opened_image, (0, 0))
             self.refresh_canvas()
+    def exit_fullscreen(self):
+        self.root.attributes("-fullscreen", False)
+        self.root.geometry(f"{self.screen_width}x{self.screen_height}")
 
 
 # Main entry point
