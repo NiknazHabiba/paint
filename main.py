@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog
 from PIL import Image, ImageDraw, ImageTk, ImageColor
@@ -6,18 +5,15 @@ from PIL import Image, ImageDraw, ImageTk, ImageColor
 
 class PaintApp:
     def __init__(self, root):
-
         self.root = root
         self.root.title("Python Paint App")
         self.root.geometry("1024x768")
-        self.root.attributes("-fullscreen", True)  #set fullscreen mode ad defualt
+        self.root.attributes("-fullscreen", True)  # Set fullscreen mode by default
         self.root.bind("<Escape>", lambda e: self.exit_fullscreen())
 
-        #get with and height of screen
+        # Get width and height of screen
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
-
-    
 
         # Default settings
         self.current_tool = "pencil"
@@ -29,9 +25,6 @@ class PaintApp:
         self.eraser_width = 20
 
         # Image for canvas
-        self.image = Image.new("RGB", (1024, 768), self.bg_color)
-        self.draw = ImageDraw.Draw(self.image)
-
         self.image = Image.new("RGB", (self.screen_width, self.screen_height), self.bg_color)
         self.draw = ImageDraw.Draw(self.image)
 
@@ -68,10 +61,9 @@ class PaintApp:
         shape_menu["menu"] = shape_menu.menu
         for shape in ["rectangle", "oval", "line", "triangle", "diamond"]:
             shape_menu.menu.add_radiobutton(
-            label=shape.replace("_", " ").capitalize(),
-            command=lambda s=shape: self.select_tool("shape", s)
-        )
-
+                label=shape.replace("_", " ").capitalize(),
+                command=lambda s=shape: self.select_tool("shape", s)
+            )
         shape_menu.pack(side=tk.LEFT, padx=5)
 
         # Fill button
@@ -97,7 +89,7 @@ class PaintApp:
             btn.pack(side=tk.LEFT, padx=2 if idx % 5 else 10, pady=5)
 
     def create_canvas(self):
-        self.canvas = tk.Canvas(self.root, bg="white", width=1024, height=768)
+        self.canvas = tk.Canvas(self.root, bg="white", width=self.screen_width, height=self.screen_height)
         self.canvas.pack(fill=tk.BOTH, expand=True)
         self.canvas.bind("<ButtonPress-1>", self.start_draw)
         self.canvas.bind("<B1-Motion>", self.draw_tool)
@@ -129,7 +121,6 @@ class PaintApp:
             self.flood_fill(event.x, event.y)
 
     def draw_tool(self, event):
-        # pencile managment
         if self.current_tool == "pencil":
             if self.current_pencil_style == "solid":
                 self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
@@ -151,13 +142,11 @@ class PaintApp:
                                         fill=self.color, width=self.pen_width, dash=(4, 2))
             self.start_x, self.start_y = event.x, event.y
 
-        # eraser
         elif self.current_tool == "eraser":
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                     fill=self.bg_color, width=self.eraser_width, capstyle=tk.ROUND, smooth=tk.TRUE)
             self.start_x, self.start_y = event.x, event.y
 
-        # shape
         elif self.current_tool == "shape" and self.current_shape:
             if self.current_item:
                 self.canvas.delete(self.current_item)
@@ -192,6 +181,10 @@ class PaintApp:
                 self.draw.ellipse(coords, outline=self.color, width=self.pen_width)
             elif self.current_shape == "line":
                 self.draw.line(coords, fill=self.color, width=self.pen_width)
+            elif self.current_shape == "triangle":
+                self.draw.polygon(coords, outline=self.color, width=self.pen_width)
+            elif self.current_shape == "diamond":
+                self.draw.polygon(coords, outline=self.color, width=self.pen_width)
             self.current_item = None
 
     def flood_fill(self, x, y):
@@ -230,6 +223,7 @@ class PaintApp:
             opened_image = Image.open(file_path)
             self.image.paste(opened_image, (0, 0))
             self.refresh_canvas()
+
     def exit_fullscreen(self):
         self.root.attributes("-fullscreen", False)
         self.root.geometry(f"{self.screen_width}x{self.screen_height}")
