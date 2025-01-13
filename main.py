@@ -8,10 +8,10 @@ class PaintApp:
         self.root = root
         self.root.title("Python Paint App")
         self.root.geometry("1024x768")
-        self.root.attributes("-fullscreen", True)  # Set fullscreen mode by default
+        self.root.attributes("-fullscreen", True)
         self.root.bind("<Escape>", lambda e: self.exit_fullscreen())
 
-        # Get width and height of screen
+        # Screen dimensions
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
 
@@ -28,7 +28,7 @@ class PaintApp:
         self.image = Image.new("RGB", (self.screen_width, self.screen_height), self.bg_color)
         self.draw = ImageDraw.Draw(self.image)
 
-        # Initialize UI
+        # UI setup
         self.create_toolbar()
         self.create_canvas()
 
@@ -61,7 +61,7 @@ class PaintApp:
         shape_menu["menu"] = shape_menu.menu
         for shape in ["rectangle", "oval", "line", "triangle", "diamond"]:
             shape_menu.menu.add_radiobutton(
-                label=shape.replace("_", " ").capitalize(),
+                label=shape.capitalize(),
                 command=lambda s=shape: self.select_tool("shape", s)
             )
         shape_menu.pack(side=tk.LEFT, padx=5)
@@ -100,6 +100,7 @@ class PaintApp:
 
     def set_pencil_style(self, style):
         self.current_pencil_style = style
+        self.select_tool("pencil")
 
     def select_tool(self, tool, shape=None):
         self.current_tool = tool
@@ -132,19 +133,26 @@ class PaintApp:
                 x2, y2 = event.x, event.y
                 dx, dy = x2 - x1, y2 - y1
                 distance = (dx**2 + dy**2)**0.5
+                if distance == 0:
+                    return
                 steps = int(distance // step)
+                if steps == 0:
+                    return
                 for i in range(steps + 1):
                     dot_x = x1 + (i / steps) * dx
                     dot_y = y1 + (i / steps) * dy
                     self.canvas.create_oval(dot_x, dot_y, dot_x + self.pen_width, dot_y + self.pen_width, fill=self.color)
+                    self.draw.ellipse((dot_x, dot_y, dot_x + self.pen_width, dot_y + self.pen_width), fill=self.color)
             elif self.current_pencil_style == "wavy":
                 self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                         fill=self.color, width=self.pen_width, dash=(4, 2))
+                self.draw.line((self.start_x, self.start_y, event.x, event.y), fill=self.color, width=self.pen_width)
             self.start_x, self.start_y = event.x, event.y
 
         elif self.current_tool == "eraser":
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y,
                                     fill=self.bg_color, width=self.eraser_width, capstyle=tk.ROUND, smooth=tk.TRUE)
+            self.draw.line((self.start_x, self.start_y, event.x, event.y), fill=self.bg_color, width=self.eraser_width)
             self.start_x, self.start_y = event.x, event.y
 
         elif self.current_tool == "shape" and self.current_shape:
@@ -162,15 +170,13 @@ class PaintApp:
             elif self.current_shape == "triangle":
                 mid_x = (self.start_x + event.x) // 2
                 self.current_item = self.canvas.create_polygon(self.start_x, event.y, event.x, event.y, mid_x, self.start_y,
-                                                            outline=self.color, width=self.pen_width, fill="")
+                                                                outline=self.color, width=self.pen_width, fill="")
             elif self.current_shape == "diamond":
                 mid_x = (self.start_x + event.x) // 2
                 mid_y = (self.start_y + event.y) // 2
-                self.current_item = self.canvas.create_polygon(mid_x, self.start_y,
-                                                            event.x, mid_y,
-                                                            mid_x, event.y,
-                                                            self.start_x, mid_y,
-                                                            outline=self.color, width=self.pen_width, fill="")
+                self.current_item = self.canvas.create_polygon(mid_x, self.start_y, event.x, mid_y,
+                                                                mid_x, event.y, self.start_x, mid_y,
+                                                                outline=self.color, width=self.pen_width, fill="")
 
     def reset_draw(self, event):
         if self.current_tool == "shape" and self.current_shape and self.current_item:
@@ -190,7 +196,6 @@ class PaintApp:
     def flood_fill(self, x, y):
         target_color = self.image.getpixel((x, y))
         fill_color = ImageColor.getcolor(self.color, "RGB")
-
         if target_color == fill_color:
             return
 
