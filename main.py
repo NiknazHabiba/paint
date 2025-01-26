@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog
 from PIL import Image, ImageDraw, ImageTk, ImageColor
-
+from tkinter import messagebox
+from PIL import ImageFilter, ImageEnhance
 
 class PaintApp:
     def __init__(self, root):
@@ -31,6 +32,14 @@ class PaintApp:
         # UI setup
         self.create_toolbar()
         self.create_canvas()
+
+        # Position display label for cursor
+        self.cursor_position_label = tk.Label(self.root, text="x: 0, y: 0", bg="white", font=("Arial", 12))
+        self.cursor_position_label.place(x=self.screen_width - 120, y=self.screen_height - 30)
+
+        # Track mouse movement
+        self.root.bind("<Motion>", self.update_cursor_position)
+        
 
     def create_toolbar(self):
         toolbar = tk.Frame(self.root, bg="#DDDDDD", height=50)
@@ -76,6 +85,15 @@ class PaintApp:
         # Color palette
         self.create_color_palette(toolbar)
 
+        filter_menu = ttk.Menubutton(toolbar, text="Filters")
+        filter_menu.menu = tk.Menu(filter_menu, tearoff=0)
+        filter_menu["menu"] = filter_menu.menu
+        filter_menu.menu.add_command(label="Blur", command=self.apply_blur)
+        filter_menu.menu.add_command(label="Enhance Contrast", command=self.apply_contrast)
+        filter_menu.menu.add_command(label="Edge Enhance", command=self.apply_edge_enhance)
+        filter_menu.menu.add_command(label="Black & White", command=self.apply_black_and_white)
+        filter_menu.pack(side=tk.LEFT, padx=5)
+
         # Save/Open buttons
         ttk.Button(toolbar, text="Save", command=self.save_image).pack(side=tk.RIGHT, padx=5)
         ttk.Button(toolbar, text="Open", command=self.open_image).pack(side=tk.RIGHT, padx=5)
@@ -94,7 +112,8 @@ class PaintApp:
         self.canvas.bind("<ButtonPress-1>", self.start_draw)
         self.canvas.bind("<B1-Motion>", self.draw_tool)
         self.canvas.bind("<ButtonRelease-1>", self.reset_draw)
-
+        self.canvas.bind("<Motion>", self.update_cursor_position)  # Bind the motion event
+        
         self.start_x = self.start_y = None
         self.current_item = None
 
@@ -233,6 +252,42 @@ class PaintApp:
         self.root.attributes("-fullscreen", False)
         self.root.geometry(f"{self.screen_width}x{self.screen_height}")
 
+    def apply_blur(self):
+        try:
+            self.image = self.image.filter(ImageFilter.BLUR)
+            self.refresh_canvas()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error applying blur filter: {e}")
+
+    def apply_contrast(self):
+        try: 
+            enhancer = ImageEnhance.Contrast(self.image)
+            self.image = enhancer.enhance(2.0)  
+            self.refresh_canvas()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error applying contrast filter: {e}")
+
+    def apply_edge_enhance(self):
+        try:
+            self.image = self.image.filter(ImageFilter.EDGE_ENHANCE)
+            self.refresh_canvas()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error applying edge enhance filter: {e}")
+    def apply_black_and_white(self):
+        try:
+           
+            self.image = self.image.convert("L")
+            self.refresh_canvas()
+        except Exception as e:
+            messagebox.showerror("Error", f"Error applying black & white filter: {e}")        
+
+    def refresh_canvas(self):
+        self.canvas.delete("all")
+        self.imgtk = ImageTk.PhotoImage(self.image)
+        self.canvas.create_image(0, 0, image=self.imgtk, anchor=tk.NW)
+    def update_cursor_position(self, event):
+        x, y = event.x, event.y
+        self.cursor_position_label.config(text=f"X: {x}, Y: {y}")        
 
 # Main entry point
 if __name__ == "__main__":
