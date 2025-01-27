@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog
 from PIL import Image, ImageDraw, ImageTk, ImageColor
 from tkinter import messagebox
+from PIL import ImageFont
 
 class PaintApp:
     def __init__(self, root):
@@ -261,19 +262,31 @@ class PaintApp:
         self.canvas.create_image(0, 0, image=tk_image, anchor=tk.NW)
         self.canvas.image = tk_image
 
-        # # Redraw text items
-        # for idx, text_item in enumerate(self.text_items):
-        #     x, y = self.canvas.coords(text_item)
-        #     text = self.canvas.itemcget(text_item, "text")
-        #     color = self.text_colors[idx]
-        #     self.canvas.create_text(x, y, text=text, fill=color, font=("Arial", 16), anchor=tk.NW)
+        # Redraw text items
+        for idx, text_item in enumerate(self.text_items):
+            x, y = self.canvas.coords(text_item)
+            text = self.canvas.itemcget(text_item, "text")
+            color = self.text_colors[idx]
+            self.canvas.create_text(x, y, text=text, fill=color, font=("Arial", 16), anchor=tk.NW)
 
 
     def save_image(self):
+    # همه متن‌ها را به تصویر PIL اضافه کن
+        for idx, text_item in enumerate(self.text_items):
+            x, y = self.canvas.coords(text_item)
+            text = self.canvas.itemcget(text_item, "text")
+            color = self.text_colors[idx]
+        
+        # اضافه کردن متن به تصویر با فونت دلخواه
+            font = ImageFont.truetype("arial.ttf", 16)  # فایل arial.ttf باید در سیستم موجود باشد
+            self.draw.text((x, y), text, fill=color, font=font)
+    
+    # ذخیره کردن تصویر
         file_path = filedialog.asksaveasfilename(defaultextension=".png",
-                                                 filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
+                                             filetypes=[("PNG files", "*.png"), ("All files", "*.*")])
         if file_path:
             self.image.save(file_path)
+
 
     def open_image(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg;*.bmp"), ("All files", "*.*")])
