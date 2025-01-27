@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog
 from PIL import Image, ImageDraw, ImageTk, ImageColor
 from tkinter import messagebox
-from PIL import ImageFilter, ImageEnhance
 
 class PaintApp:
     def __init__(self, root):
@@ -42,7 +41,15 @@ class PaintApp:
 
         # Track mouse movement
         self.root.bind("<Motion>", self.update_cursor_position)
-        
+
+        # Handle window close
+        self.root.protocol("WM_DELETE_WINDOW", self.on_exit)  # Bind the close button to `on_exit`
+
+    def on_exit(self):
+        response = messagebox.askyesno("Exit", "Do you want to save the image?")
+        if response:  # If "Yes" is selected
+            self.save_image()
+        self.root.quit()        
 
     def create_toolbar(self):
         toolbar = tk.Frame(self.root, bg="#DDDDDD", height=50)
@@ -59,10 +66,11 @@ class PaintApp:
             )
         pencil_menu.pack(side=tk.LEFT, padx=5)
 
-        # Pen size spinbox
-        self.pen_size_spinbox = ttk.Spinbox(toolbar, from_=1, to=50, width=5, command=self.update_pen_size)
+        # Pen size spinbox 
+        self.pen_size_spinbox = ttk.Spinbox(toolbar, from_=1, to=50, width=5, command=self.update_pen_size, state="readonly")
         self.pen_size_spinbox.set(self.pen_width)
         self.pen_size_spinbox.pack(side=tk.LEFT, padx=5)
+
 
         # Eraser button
         ttk.Button(toolbar, text="Eraser", command=lambda: self.select_tool("eraser")).pack(side=tk.LEFT, padx=5)
@@ -91,14 +99,6 @@ class PaintApp:
         # Color palette
         self.create_color_palette(toolbar)
 
-        filter_menu = ttk.Menubutton(toolbar, text="Filters")
-        filter_menu.menu = tk.Menu(filter_menu, tearoff=0)
-        filter_menu["menu"] = filter_menu.menu
-        filter_menu.menu.add_command(label="Blur", command=self.apply_blur)
-        filter_menu.menu.add_command(label="Enhance Contrast", command=self.apply_contrast)
-        filter_menu.menu.add_command(label="Edge Enhance", command=self.apply_edge_enhance)
-        filter_menu.menu.add_command(label="Black & White", command=self.apply_black_and_white)
-        filter_menu.pack(side=tk.LEFT, padx=5)
 
         # Save/Open buttons
         ttk.Button(toolbar, text="Save", command=self.save_image).pack(side=tk.RIGHT, padx=5)
@@ -261,12 +261,12 @@ class PaintApp:
         self.canvas.create_image(0, 0, image=tk_image, anchor=tk.NW)
         self.canvas.image = tk_image
 
-        # Redraw text items
-        for idx, text_item in enumerate(self.text_items):
-            x, y = self.canvas.coords(text_item)
-            text = self.canvas.itemcget(text_item, "text")
-            color = self.text_colors[idx]
-            self.canvas.create_text(x, y, text=text, fill=color, font=("Arial", 16), anchor=tk.NW)
+        # # Redraw text items
+        # for idx, text_item in enumerate(self.text_items):
+        #     x, y = self.canvas.coords(text_item)
+        #     text = self.canvas.itemcget(text_item, "text")
+        #     color = self.text_colors[idx]
+        #     self.canvas.create_text(x, y, text=text, fill=color, font=("Arial", 16), anchor=tk.NW)
 
 
     def save_image(self):
@@ -285,35 +285,7 @@ class PaintApp:
     def exit_fullscreen(self):
         self.root.attributes("-fullscreen", False)
         self.root.geometry(f"{self.screen_width}x{self.screen_height}")
-
-    def apply_blur(self):
-        try:
-            self.image = self.image.filter(ImageFilter.BLUR)
-            self.refresh_canvas()
-        except Exception as e:
-            messagebox.showerror("Error", f"Error applying blur filter: {e}")
-
-    def apply_contrast(self):
-        try: 
-            enhancer = ImageEnhance.Contrast(self.image)
-            self.image = enhancer.enhance(2.0)  
-            self.refresh_canvas()
-        except Exception as e:
-            messagebox.showerror("Error", f"Error applying contrast filter: {e}")
-
-    def apply_edge_enhance(self):
-        try:
-            self.image = self.image.filter(ImageFilter.EDGE_ENHANCE)
-            self.refresh_canvas()
-        except Exception as e:
-            messagebox.showerror("Error", f"Error applying edge enhance filter: {e}")
-    def apply_black_and_white(self):
-        try:
-           
-            self.image = self.image.convert("L")
-            self.refresh_canvas()
-        except Exception as e:
-            messagebox.showerror("Error", f"Error applying black & white filter: {e}")        
+     
 
     def update_cursor_position(self, event):
         x, y = event.x, event.y
