@@ -24,6 +24,9 @@ class PaintApp:
         self.bg_color = "#FFFFFF"
         self.pen_width = 5
         self.eraser_width = 20
+        self.text_entry = None
+        self.text_items = []  
+        self.text_colors = []
 
         # Image for canvas
         self.image = Image.new("RGB", (self.screen_width, self.screen_height), self.bg_color)
@@ -77,6 +80,9 @@ class PaintApp:
 
         # Fill button
         ttk.Button(toolbar, text="Fill", command=lambda: self.select_tool("fill")).pack(side=tk.LEFT, padx=5)
+
+        # Text button
+        ttk.Button(toolbar, text="Text", command=lambda: self.select_tool("text")).pack(side=tk.LEFT, padx=5)
 
         # Color picker
         self.color_btn = ttk.Button(toolbar, text="Color", command=self.select_color)
@@ -139,6 +145,8 @@ class PaintApp:
         self.start_x, self.start_y = event.x, event.y
         if self.current_tool == "fill":
             self.flood_fill(event.x, event.y)
+        elif self.current_tool == "text":
+            self.add_text(event.x, event.y)
 
     def draw_tool(self, event):
         if self.current_tool == "pencil":
@@ -212,6 +220,24 @@ class PaintApp:
                 self.draw.polygon(coords, outline=self.color, width=self.pen_width)
             self.current_item = None
 
+    def add_text(self, x, y):
+        if self.text_entry:
+            self.text_entry.destroy()
+
+        self.text_entry = tk.Entry(self.canvas, font=("Arial", 16), bg="white", fg=self.color, bd=1)
+        self.text_entry.place(x=x, y=y)
+        self.text_entry.focus()
+        self.text_entry.bind("<Return>", lambda event: self.place_text(x, y))
+
+    def place_text(self, x, y):
+        text = self.text_entry.get()
+        if text:
+            text_item = self.canvas.create_text(x, y, text=text, fill=self.color, font=("Arial", 16), anchor=tk.NW)
+            self.text_items.append(text_item)  
+            self.text_colors.append(self.color) 
+        self.text_entry.destroy()
+        self.text_entry = None
+
     def flood_fill(self, x, y):
         target_color = self.image.getpixel((x, y))
         fill_color = ImageColor.getcolor(self.color, "RGB")
@@ -234,6 +260,14 @@ class PaintApp:
         tk_image = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, image=tk_image, anchor=tk.NW)
         self.canvas.image = tk_image
+
+        # Redraw text items
+        for idx, text_item in enumerate(self.text_items):
+            x, y = self.canvas.coords(text_item)
+            text = self.canvas.itemcget(text_item, "text")
+            color = self.text_colors[idx]
+            self.canvas.create_text(x, y, text=text, fill=color, font=("Arial", 16), anchor=tk.NW)
+
 
     def save_image(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".png",
@@ -281,10 +315,6 @@ class PaintApp:
         except Exception as e:
             messagebox.showerror("Error", f"Error applying black & white filter: {e}")        
 
-    def refresh_canvas(self):
-        self.canvas.delete("all")
-        self.imgtk = ImageTk.PhotoImage(self.image)
-        self.canvas.create_image(0, 0, image=self.imgtk, anchor=tk.NW)
     def update_cursor_position(self, event):
         x, y = event.x, event.y
         self.cursor_position_label.config(text=f"X: {x}, Y: {y}")        
